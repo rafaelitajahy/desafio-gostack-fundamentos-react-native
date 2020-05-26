@@ -30,23 +30,65 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      const getProducts = await AsyncStorage.getItem('@GoMarketplace:cart');
+
+      !!getProducts && setProducts(JSON.parse(getProducts));
     }
 
     loadProducts();
   }, []);
 
-  const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
-  }, []);
+  const addToCart = useCallback(
+    async (product: Product) => {
+      const index = products.findIndex(p => p.id === product.id);
 
-  const increment = useCallback(async id => {
-    // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+      if (index > -1) {
+        products[index].quantity += 1;
+        setProducts([...products]);
+      } else {
+        product.quantity = 1;
+        setProducts([...products, product]);
+      }
+      await AsyncStorage.setItem(
+        '@GoMarketplace:cart',
+        JSON.stringify(products),
+      );
+    },
+    [products],
+  );
 
-  const decrement = useCallback(async id => {
-    // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+  const increment = useCallback(
+    async id => {
+      const index = products.findIndex(p => p.id === id);
+      products[index].quantity += 1;
+      setProducts([...products]);
+      await AsyncStorage.setItem(
+        '@GoMarketplace:cart',
+        JSON.stringify(products),
+      );
+    },
+    [products],
+  );
+
+  const decrement = useCallback(
+    async id => {
+      const index = products.findIndex(p => p.id === id);
+
+      if (products[index].quantity > 1) {
+        products[index].quantity -= 1;
+        setProducts([...products]);
+      } else {
+        const newProducts = products.filter(p => p.id !== id);
+        setProducts(newProducts);
+
+        await AsyncStorage.setItem(
+          '@GoMarketplace:cart',
+          JSON.stringify(newProducts),
+        );
+      }
+    },
+    [products],
+  );
 
   const value = React.useMemo(
     () => ({ addToCart, increment, decrement, products }),
